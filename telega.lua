@@ -1,46 +1,44 @@
 script_properties('work-in-pause')
 
-local samp = require('samp.events')
-local effil = require('effil')
-local ffi = require('ffi')
 local encoding = require('encoding')
 encoding.default = 'CP1251'
 u8 = encoding.UTF8
 
--- Çàìåíåíû íà ôèêñèðîâàííûå çíà÷åíèÿ
-local chatID = 'чат ид '
-local token = 'токен'
+local samp = require('samp.events')
+local effil = require('effil')
 
+-- Настройки Telegram
+local chatID = '1239573440'
+local token = '7830573550:AAE-39gSXUwUgUJC7xpt8DrXeQBm2S0VTt0'
+
+-- Поток отправки
 local effilTelegramSendMessage = effil.thread(function(text)
     local requests = require('requests')
     requests.post(('https://api.telegram.org/bot%s/sendMessage'):format(token), {
         params = {
-            text = text,
             chat_id = chatID,
+            text = text,
         }
     })
 end)
 
 function url_encode(text)
-    local text = string.gsub(text, "([^%w-_ %.~=])", function(c)
+    return text:gsub("([^%w%-_%.~])", function(c)
         return string.format("%%%02X", string.byte(c))
-    end)
-    return string.gsub(text, " ", "+")
+    end):gsub(" ", "+")
 end
 
 function sendTelegramMessage(text)
-    local text = text:gsub('{......}', '') -- óáðàòü öâåòîâûå êîäû
     effilTelegramSendMessage(url_encode(u8(text)))
 end
 
 function main()
-    while not isSampAvailable() do wait(0) end
-    sampAddChatMessage('[telegram] {ffffff}Ñêðèïò àêòèâåí. Îæèäàåì ñîîáùåíèÿ â ÷àòå...', 0x3083ff)
-    wait(-1)
-end
+    while not isSampAvailable() do wait(100) end
 
-function samp.onServerMessage(color, text)
-    if text:lower():find('ñòðîé') then
-        sendTelegramMessage('Â ÷àòå îáíàðóæåíî ñîîáùåíèå: ' .. text)
-    end
+    sampRegisterChatCommand("tg", function()
+        local nickname = sampGetPlayerNickname(select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)))
+        sendTelegramMessage("Ник игрока: " .. nickname)
+    end)
+
+    sampAddChatMessage("[Telegram] {FFFFFF}Команда /tg активна. Отправка ника в Telegram.", 0x3083FF)
 end
